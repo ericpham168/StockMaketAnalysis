@@ -240,15 +240,12 @@ namespace sma_core
             {
                 newPattern.name = Prefix.name + BP.name;
 
-                //Func<int, bool> func = (tid) =>
-                //{
-                //    return Array.Exists(BP.TIDSet.ToArray(), prefix => prefix == tid);
-                //};
+                Func<int, bool> func = (tid) =>
+                {
+                    return Array.Exists(BP.TIDSet.ToArray(), prefix => prefix == tid);
+                };
 
-                //newPattern.TIDSet = Prefix.TIDSet.Where(func).ToList();
-
-                newPattern.TIDSet = Prefix.TIDSet.Where(t => BP.TIDSet.Contains(t) == true).ToList();
-
+                newPattern.TIDSet = Prefix.TIDSet.Where(func).ToList();
             }
 
             return BP;

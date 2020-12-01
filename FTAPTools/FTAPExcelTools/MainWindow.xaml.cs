@@ -1,10 +1,14 @@
-﻿using Microsoft.Win32;
+﻿using FTAPExcelTools.ProgressDialog;
+using Microsoft.Win32;
+using Newtonsoft.Json;
 using System;
 using System.CodeDom;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
+using System.Net.Http;
+using System.Net.Http.Headers;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
@@ -26,6 +30,8 @@ namespace FTAPExcelTools
     /// </summary>
     public partial class MainWindow : Window
     {
+        HttpClient _client;
+        String Path = string.Empty;
         private const string DATE_HEADER = "<DTYYYYMMDD>";
         private const string OPEN_HEADER = "<Open>";
         private const string CLOSE_HEADER = "<Close>";
@@ -37,6 +43,11 @@ namespace FTAPExcelTools
         public MainWindow()
         {
             InitializeComponent();
+            //
+            _client = new HttpClient();
+            _client.BaseAddress = new Uri(@"https://localhost:44318/");
+            _client.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
+            //
             var processes = from p in Process.GetProcessesByName("EXCEL")
                             select p;
             foreach (var process in processes)
@@ -346,7 +357,7 @@ namespace FTAPExcelTools
 
             string pathUseFile = $"{pathSave}\\{WB.Name.Replace(".csv", "")} use.csv";
             WB.SaveCopyAs(pathUseFile);
-
+            Path = pathUseFile;
             //
             WB.Close(false);
             oExcel.Quit();
@@ -354,9 +365,71 @@ namespace FTAPExcelTools
 
         private void Button_Click(object sender, RoutedEventArgs e)
         {
-            string path = SelectImportFileAction();
-            HandlerAndExportExcelFile(path);
+            if (Path == string.Empty) return;
+            ProgressDialogResult resultLog = FTAPExcelTools.ProgressDialog.ProgressDialog.Execute(Application.Current.Windows.OfType<Window>().Where(o => o.Name == "mainWindow").SingleOrDefault(), "Exporting to Excel... plz watting !!", (bw) =>
+            {
+                HandlerAndExportExcelFile(Path);
+                MessageBox.Show("Export Successful");
+            });
+        }
 
+        private void Button_Click_1(object sender, RoutedEventArgs e)
+        {
+            Path = SelectImportFileAction();
+            tvPath.Text = Path;
+        }
+
+        private List<Transaction> GetDataFromExcel(string path)
+        {
+            List<Transaction> transactions = new List<Transaction>();
+            Excel.Application oExcel = new Excel.Application();
+            Excel.Workbook WB = oExcel.Workbooks.Open(path);
+            Excel.Worksheet wks = (Excel.Worksheet)WB.Worksheets[1];
+            int totalRows = wks.UsedRange.Rows.Count;
+            int totalColumns = wks.UsedRange.Columns.Count;
+            ProgressDialogResult resultLog = FTAPExcelTools.ProgressDialog.ProgressDialog.Execute(Application.Current.Windows.OfType<Window>().Where(o => o.Name == "mainWindow").SingleOrDefault(), "Importing Data... plz watting !!", (bw) =>
+            {
+                for (int i = 2; i <= totalRows; i++)
+                {
+                    Transaction transaction = new Transaction();
+                    transaction.TID = ((Excel.Range)wks.Cells[i, 1]).Value?.ToString() != null ?
+                                            Int32.Parse(((Excel.Range)wks.Cells[i, 1]).Value?.ToString()) : 0;
+                    transaction.ItemSet = ((Excel.Range)wks.Cells[i, 2]).Value?.ToString();
+                    transaction.Price = ((Excel.Range)wks.Cells[i, 3]).Value?.ToString() != null ?
+                                            Double.Parse(((Excel.Range)wks.Cells[i, 3]).Value?.ToString()) : 0;
+                    transactions.Add(transaction);
+                }
+            });
+            WB.Close();
+            oExcel.Quit();
+            return transactions;
+        }
+
+
+        public async void ImportDatabase(List<Transaction> transactions)
+        {
+            string endpoint = "api/rule";
+            var json = JsonConvert.SerializeObject(transactions, Formatting.Indented);
+            var httpContent = new StringContent(json, Encoding.UTF8, "application/json");
+            var response = await _client.PostAsync(endpoint, httpContent);
+            if(response.StatusCode == System.Net.HttpStatusCode.OK)
+            {
+                MessageBox.Show("Import Successful !");
+            }
+            else
+            {
+                MessageBox.Show(response.StatusCode.ToString());
+            }
+        }
+
+        private void Button_Click_2(object sender, RoutedEventArgs e)
+        {
+            if (Path == string.Empty)
+                return;
+            else
+            {
+                ImportDatabase(GetDataFromExcel(Path));
+            }
         }
     }
 }

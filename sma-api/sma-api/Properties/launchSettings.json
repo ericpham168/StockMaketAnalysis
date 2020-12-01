@@ -12,7 +12,7 @@
     "IIS Express": {
       "commandName": "IISExpress",
       "launchBrowser": true,
-      "launchUrl": "",
+      "launchUrl": "api/rule",
       "environmentVariables": {
         "ASPNETCORE_ENVIRONMENT": "Development"
       }
@@ -20,7 +20,7 @@
     "sma_api": {
       "commandName": "Project",
       "launchBrowser": true,
-      "launchUrl": "RuleController",
+      "launchUrl": "api/rule",
       "environmentVariables": {
         "ASPNETCORE_ENVIRONMENT": "Development"
       },
