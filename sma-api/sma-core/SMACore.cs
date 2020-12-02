@@ -143,6 +143,9 @@ namespace sma_core
             while (tidBP.Count > 0 && tidSP.Count > 0)
             {
                 SimulatitonPartern sm = new SimulatitonPartern();
+                sm.TradingOrder = new TradingOrder();
+                sm.TradingResult = new TradingResult();
+                sm.HPOS = new POS();
                 if (index == 1)
                 {
                     sm.No = index;
@@ -236,12 +239,11 @@ namespace sma_core
         private Pattern Shift(Pattern pattern, int interval)
         {
             Pattern newParten = new Pattern();
+            newParten = pattern;
 
-            newParten.name = NewName(pattern.name, interval);
-
-            for (int i = 0; i < pattern.TIDSet.Count; i++)
+            for (int i = 0; i < newParten.TIDSet.Count; i++)
             {
-                newParten.TIDSet[i] = pattern.TIDSet[i] - interval;
+                newParten.TIDSet[i] -= interval;
             }
             return newParten;
         }
