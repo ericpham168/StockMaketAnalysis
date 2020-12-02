@@ -32,6 +32,20 @@ namespace sma_core
             MinProfit = minProfit;
             MaxRisk = maxRisk;
             MinWinRate = minWinRate;
+
+            List<string> keys = new List<string>();
+            transactions.Select(trans => trans.Data).ToList().ForEach( data => {
+                keys = keys.Concat(data).ToList();
+            });
+
+            keys.Distinct().ToList().ForEach(key =>
+            {
+                Pattern pattern = new Pattern();
+                pattern.name = key;
+                List<int> TIDSetItem = transactions.Where(trans => Array.Exists(trans.Data, i => i == key)).Select(trans => trans.TID).ToList();
+                pattern.TIDSet = TIDSetItem;
+                oneItemList.Add(pattern);
+            });
         }
         #endregion
 
@@ -53,12 +67,12 @@ namespace sma_core
                 if (ComputeSup(BP) >= minSup)
                 {
                     GenSP(BP, null, 0, 0);
-                    GenBP(BP, i+1, interval);
+                    GenBP(BP, i + 1, interval);
                 }
             }
 
 
-            if(prefix != null)
+            if (prefix != null)
             {
                 GenBP(prefix, 0, interval + 1);
             }
@@ -108,7 +122,7 @@ namespace sma_core
         #region private method
         private bool isResultsatisfy(TradingResult fResult)
         {
-            if(fResult.Profit < MinProfit || fResult.Risk > MaxRisk || fResult.WinRate < MinWinRate)
+            if (fResult.Profit < MinProfit || fResult.Risk > MaxRisk || fResult.WinRate < MinWinRate)
             {
                 return false;
             }
@@ -125,8 +139,8 @@ namespace sma_core
             List<int> tidBP = tradingRule.BP.TIDSet;
             List<int> tidSP = tradingRule.SP.TIDSet;
             //
-            
-            while(tidBP.Count > 0 && tidSP.Count > 0)
+
+            while (tidBP.Count > 0 && tidSP.Count > 0)
             {
                 SimulatitonPartern sm = new SimulatitonPartern();
                 if (index == 1)
@@ -154,11 +168,11 @@ namespace sma_core
                     continue;
                 }
 
-                if(isBuyTradingCommand)
+                if (isBuyTradingCommand)
                 {
                     //simutaled trading is sell
                     sm.No = index;
-                    sm.TradingOrder.tc =  TradingCommands.Sell;
+                    sm.TradingOrder.tc = TradingCommands.Sell;
                     sm.TradingOrder.qty = 1;
                     sm.TradingOrder.price = transactions[tidSP[0]].Price;
                     sm.TID = tidSP[0];
@@ -185,20 +199,20 @@ namespace sma_core
 
             }
 
-            for(int i = 0; i < simulateds.Count - 1; i++)
+            for (int i = 0; i < simulateds.Count - 1; i++)
             {
                 // set Netprofit
                 simulateds[i].NP = simulateds[i].HPOS.mp == MarketPosition.Long ?
-                                    simulateds[i + 1].HPOS.hprice - simulateds[i].HPOS.hprice : 
-                                    simulateds[i].HPOS.hprice - simulateds[i + 1].HPOS.hprice;
+                                    simulateds[i + 1].HPOS.hprice - simulateds[i].HPOS.hprice - MAX_SPAN * FEE :
+                                    simulateds[i].HPOS.hprice - simulateds[i + 1].HPOS.hprice - MAX_SPAN * FEE;
 
                 // set Consecutive loss
                 simulateds[i].CLoss = i == 0 ? simulateds[i].NP : simulateds[i].NP + simulateds[i - 1].CLoss;
 
                 // set Draw Down 
                 simulateds[i].DD = simulateds[i].HPOS.mp == MarketPosition.Short ? 0 :
-                                        i == 0 ? 0 + minP(simulateds[i].HPOS.hprice, simulateds[i + 1].HPOS.hprice) - simulateds[i].HPOS.hprice:
-                                        simulateds[i -1].CLoss + minP(simulateds[i].HPOS.hprice, simulateds[i + 1].HPOS.hprice) - simulateds[i].HPOS.hprice;
+                                        i == 0 ? 0 + minP(simulateds[i].HPOS.hprice, simulateds[i + 1].HPOS.hprice) - simulateds[i].HPOS.hprice :
+                                        simulateds[i - 1].CLoss + minP(simulateds[i].HPOS.hprice, simulateds[i + 1].HPOS.hprice) - simulateds[i].HPOS.hprice;
                 // Set Run UP
                 simulateds[i].RU = simulateds[i].HPOS.mp == MarketPosition.Long ? 0 :
                                         i == 0 ? 0 - maxP(simulateds[i].HPOS.hprice, simulateds[i + 1].HPOS.hprice) + simulateds[i].HPOS.hprice :
@@ -214,7 +228,7 @@ namespace sma_core
             return a > b ? a : b;
         }
 
-        private double minP(double a,double b)
+        private double minP(double a, double b)
         {
             return a < b ? a : b;
         }
@@ -326,14 +340,14 @@ namespace sma_core
         {
             string[] subNameBPs = Regex.Matches(BP.name, @"[a-z]\(.*?\)").Cast<Match>().Select(m => m.Value).ToArray();
             string[] subNameSPs = Regex.Matches(SP.name, @"[a-z]\(.*?\)").Cast<Match>().Select(m => m.Value).ToArray();
-            int lengthMin = subNameBPs.Length > subNameSPs.Length ? subNameSPs.Length : subNameBPs.Length; 
-            if(BP.name == SP.name)
+            int lengthMin = subNameBPs.Length > subNameSPs.Length ? subNameSPs.Length : subNameBPs.Length;
+            if (BP.name == SP.name)
             {
                 return 0;
             }
             for (int i = 0; i < lengthMin; i++)
             {
-                if(subNameBPs[i] != subNameSPs[i])
+                if (subNameBPs[i] != subNameSPs[i])
                 {
                     int numBP = Int32.Parse(Regex.Matches(SP.name, @"\(.*?\)")
                                     .Cast<Match>().Select(m => m.Value).ToString()
@@ -341,7 +355,7 @@ namespace sma_core
                     int numSP = Int32.Parse(Regex.Matches(SP.name, @"\(.*?\)")
                                     .Cast<Match>().Select(m => m.Value).ToString()
                                     .Replace("(", "").Replace(")", "").ToString());
-                    if(numBP > numSP)
+                    if (numBP > numSP)
                     {
                         return -1;
                     }

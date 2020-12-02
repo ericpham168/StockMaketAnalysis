@@ -31,6 +31,8 @@ namespace sma_api.Controllers
         [HttpGet]
         public void GetRule(double minProfit, double maxRisk, double minWinRate)
         {
+            
+            
             SMACore smaCore = new SMACore(minProfit, maxRisk, minWinRate);
             smaCore.GenBP(null, 0, 0);
         }

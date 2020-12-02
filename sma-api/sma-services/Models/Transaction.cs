@@ -14,11 +14,16 @@ namespace sma_services.Models
         public string ItemSet { get; set; }
 
         [NotMapped]
-        public char[] Data
+        public string[] Data
         {
             get
             {
-                return Array.ConvertAll(ItemSet.Split(','), Char.Parse);
+                if (ItemSet != null)
+                {
+                    return ItemSet.Split(',');
+                }
+                else
+                    return new string[0];
             }
             set
             {
