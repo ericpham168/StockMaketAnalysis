@@ -136,11 +136,11 @@ namespace sma_core
             POS pOS = new POS();
             int index = 1;
             bool isBuyTradingCommand = false;
-            List<int> tidBP = tradingRule.BP.TIDSet;
-            List<int> tidSP = tradingRule.SP.TIDSet;
+            List<int> tidBP = tradingRule.BP?.TIDSet;
+            List<int> tidSP = tradingRule.SP?.TIDSet;
             //
 
-            while (tidBP.Count > 0 && tidSP.Count > 0)
+            while (tidBP?.Count > 0 && tidSP?.Count > 0)
             {
                 SimulatitonPartern sm = new SimulatitonPartern();
                 sm.TradingOrder = new TradingOrder();
@@ -241,6 +241,7 @@ namespace sma_core
             Pattern newParten = new Pattern();
             newParten = pattern;
 
+            newParten.name = NewName(newParten.name, interval);
             for (int i = 0; i < newParten.TIDSet.Count; i++)
             {
                 newParten.TIDSet[i] -= interval;
@@ -340,6 +341,9 @@ namespace sma_core
 
         private int ComparePattern(Pattern BP, Pattern SP)
         {
+            var x = Regex.Matches(BP.name, @"[a-z]\(.*?\)");
+            var y = x.Cast<Match>();
+            var z = y.Select(m => m.Value).ToArray();
             string[] subNameBPs = Regex.Matches(BP.name, @"[a-z]\(.*?\)").Cast<Match>().Select(m => m.Value).ToArray();
             string[] subNameSPs = Regex.Matches(SP.name, @"[a-z]\(.*?\)").Cast<Match>().Select(m => m.Value).ToArray();
             int lengthMin = subNameBPs.Length > subNameSPs.Length ? subNameSPs.Length : subNameBPs.Length;
@@ -351,12 +355,10 @@ namespace sma_core
             {
                 if (subNameBPs[i] != subNameSPs[i])
                 {
-                    int numBP = Int32.Parse(Regex.Matches(SP.name, @"\(.*?\)")
-                                    .Cast<Match>().Select(m => m.Value).ToString()
-                                    .Replace("(", "").Replace(")", "").ToString());
-                    int numSP = Int32.Parse(Regex.Matches(SP.name, @"\(.*?\)")
-                                    .Cast<Match>().Select(m => m.Value).ToString()
-                                    .Replace("(", "").Replace(")", "").ToString());
+                    List<String> iBP = Regex.Matches(subNameBPs[i], @"[0-9]").Cast<Match>().Select(m => m.Value).ToList();
+                    List<String> iSP = Regex.Matches(subNameSPs[i], @"[0-9]").Cast<Match>().Select(m => m.Value).ToList();
+                    int numBP = Int32.Parse(iBP[0]);
+                    int numSP = Int32.Parse(iSP[0]);
                     if (numBP > numSP)
                     {
                         return -1;
@@ -380,8 +382,11 @@ namespace sma_core
             }
             else
             {
-                int shiftIndex = int.Parse(name.Split('(')[2][0].ToString());
-                return $"{name}({shiftIndex - interval})";
+                //int shiftIndex = int.Parse(name.Split('(')[2][0].ToString());
+                List<String> shifts = Regex.Matches(name, @"[0-9]").Cast<Match>().Select(m => m.Value).ToList();
+                List<String> letter = Regex.Matches(name, @"[a-f]").Cast<Match>().Select(m => m.Value).ToList();
+                int shift = int.Parse(shifts[0]);
+                return $"{letter[0]}({shift - interval})";
             }
 
         }
