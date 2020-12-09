@@ -21,6 +21,7 @@ using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using System.Windows.Navigation;
 using System.Windows.Shapes;
+using System.Xml;
 using Excel = Microsoft.Office.Interop.Excel;
 
 namespace FTAPExcelTools
@@ -409,7 +410,7 @@ namespace FTAPExcelTools
         public async void ImportDatabase(List<Transaction> transactions)
         {
             string endpoint = "api/rule";
-            var json = JsonConvert.SerializeObject(transactions, Formatting.Indented);
+            var json = JsonConvert.SerializeObject(transactions, Newtonsoft.Json.Formatting.Indented);
             var httpContent = new StringContent(json, Encoding.UTF8, "application/json");
             var response = await _client.PostAsync(endpoint, httpContent);
             if(response.StatusCode == System.Net.HttpStatusCode.OK)

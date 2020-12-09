@@ -214,26 +214,31 @@ namespace sma_core
 
                 // set Draw Down 
                 simulateds[i].DD = simulateds[i].HPOS.mp == MarketPosition.Short ? 0 :
-                                        i == 0 ? 0 + minP(simulateds[i].HPOS.hprice, simulateds[i + 1].HPOS.hprice) - simulateds[i].HPOS.hprice :
-                                        simulateds[i - 1].CLoss + minP(simulateds[i].HPOS.hprice, simulateds[i + 1].HPOS.hprice) - simulateds[i].HPOS.hprice;
+                                        i == 0 ? 0 + Math.Min(simulateds[i].HPOS.hprice, simulateds[i + 1].HPOS.hprice) - simulateds[i].HPOS.hprice :
+                                        simulateds[i - 1].CLoss + Math.Min(simulateds[i].HPOS.hprice, simulateds[i + 1].HPOS.hprice) - simulateds[i].HPOS.hprice;
                 // Set Run UP
                 simulateds[i].RU = simulateds[i].HPOS.mp == MarketPosition.Long ? 0 :
-                                        i == 0 ? 0 - maxP(simulateds[i].HPOS.hprice, simulateds[i + 1].HPOS.hprice) + simulateds[i].HPOS.hprice :
-                                        simulateds[i - 1].CLoss - maxP(simulateds[i].HPOS.hprice, simulateds[i + 1].HPOS.hprice) + simulateds[i].HPOS.hprice;
+                                        i == 0 ? 0 - Math.Max(simulateds[i].HPOS.hprice, simulateds[i + 1].HPOS.hprice) + simulateds[i].HPOS.hprice :
+                                        simulateds[i - 1].CLoss - Math.Max(simulateds[i].HPOS.hprice, simulateds[i + 1].HPOS.hprice) + simulateds[i].HPOS.hprice;
+                
+                // Set Profit
+                simulateds[i].TradingResult.Profit = simulateds.Sum(o => o.NP);
+
+                //Set Risk
+                simulateds[i].TradingResult.Risk = i == 0 ? new List<double>() { Absolute(simulateds[i].CLoss), Absolute(simulateds[i].DD), Absolute(simulateds[i].RU) }.Max() :
+                    new List<double>() { Absolute(simulateds[i].CLoss), Absolute(simulateds[i].DD), Absolute(simulateds[i].RU), Absolute(simulateds[i-1].TradingResult.Risk) }.Max() ;
+                
+                //Set WinRate
+                simulateds[i].TradingResult.WinRate = simulateds.Where(o => o.NP > 0).Count() / simulateds.Count() * 100;
             }
 
             Console.WriteLine(simulateds);
             return tradingResult;
         }
 
-        private double maxP(double a, double b)
+        private double Absolute(double value)
         {
-            return a > b ? a : b;
-        }
-
-        private double minP(double a, double b)
-        {
-            return a < b ? a : b;
+            return Math.Abs(value);
         }
 
         private Pattern Shift(Pattern pattern, int interval)
@@ -263,6 +268,7 @@ namespace sma_core
                 };
 
                 newPattern.TIDSet = Prefix.TIDSet.Where(func).ToList();
+                return newPattern;
             }
 
             return BP;
@@ -341,9 +347,6 @@ namespace sma_core
 
         private int ComparePattern(Pattern BP, Pattern SP)
         {
-            var x = Regex.Matches(BP.name, @"[a-z]\(.*?\)");
-            var y = x.Cast<Match>();
-            var z = y.Select(m => m.Value).ToArray();
             string[] subNameBPs = Regex.Matches(BP.name, @"[a-z]\(.*?\)").Cast<Match>().Select(m => m.Value).ToArray();
             string[] subNameSPs = Regex.Matches(SP.name, @"[a-z]\(.*?\)").Cast<Match>().Select(m => m.Value).ToArray();
             int lengthMin = subNameBPs.Length > subNameSPs.Length ? subNameSPs.Length : subNameBPs.Length;
@@ -351,20 +354,25 @@ namespace sma_core
             {
                 return 0;
             }
-            for (int i = 0; i < lengthMin; i++)
+            else if(subNameBPs.Length < subNameSPs.Length)
             {
-                if (subNameBPs[i] != subNameSPs[i])
+                List<string> names = new List<string>();
+                subNameBPs.ToList().ForEach(name =>
+               {
+                   var nameSP = subNameSPs.FirstOrDefault(o => o == name);
+                   names.Add(nameSP);
+               });
+                subNameBPs = subNameBPs.Except(names).ToArray();
+                if(subNameBPs.Length == 0)
                 {
-                    List<String> iBP = Regex.Matches(subNameBPs[i], @"[0-9]").Cast<Match>().Select(m => m.Value).ToList();
-                    List<String> iSP = Regex.Matches(subNameSPs[i], @"[0-9]").Cast<Match>().Select(m => m.Value).ToList();
-                    int numBP = Int32.Parse(iBP[0]);
-                    int numSP = Int32.Parse(iSP[0]);
-                    if (numBP > numSP)
-                    {
-                        return -1;
-                    }
+                    return -1;
+                }
+                else
+                {
+                    //to do
                 }
             }
+            
             return 1;
         }
 
