@@ -45,7 +45,7 @@ namespace sma_api.Controllers
             try
             {
                 _context.AddRange(transactions);
-                _context.SaveChanges();
+                _context.SaveChanges(true);
                 return Ok();
             }
             catch (Exception ex)

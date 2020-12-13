@@ -3,6 +3,7 @@ using sma_services.Models;
 using sma_services.Services;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Text;
 using System.Text.RegularExpressions;
@@ -13,7 +14,7 @@ namespace sma_core
     {
         #region property
         private const int MAX_SPAN = 2;
-        private const double FEE = 0;
+        private const double FEE = 1;
 
         private List<Pattern> oneItemList = new List<Pattern>();
         private int minSup = 0;
@@ -32,7 +33,7 @@ namespace sma_core
             MinProfit = minProfit;
             MaxRisk = maxRisk;
             MinWinRate = minWinRate;
-
+            minSup = minWinRate > 0 ? 1 : 0;
             List<string> keys = new List<string>();
             transactions.Select(trans => trans.Data).ToList().ForEach( data => {
                 keys = keys.Concat(data).ToList();
@@ -46,6 +47,8 @@ namespace sma_core
                 pattern.TIDSet = TIDSetItem;
                 oneItemList.Add(pattern);
             });
+
+            oneItemList = oneItemList.OrderBy(p => p.name).ToList();
         }
         #endregion
 
@@ -53,50 +56,92 @@ namespace sma_core
         #region public method
         public void GenBP(Pattern prefix, int index, int interval)
         {
-            if (interval > MAX_SPAN)
+
+            // clone prefix to avoid referencing
+            Pattern pre = null;
+            if(prefix != null)
+            {
+                pre = new Pattern();
+                pre.name = prefix.name;
+                pre.TIDSet = prefix.TIDSet.ToList();
+            }
+
+
+            // pattern X = 𝑥1(𝑖1) 𝑥2(𝑖2)⋅⋅⋅𝑥𝑗(𝑖𝑗), where j > 0 and 0 ≥ 𝑖𝑗 ≥ (1 − maxspan)
+            if (interval >= MAX_SPAN)
             {
                 return;
             }
 
             for (int i = index; i < oneItemList.Count; i++)
             {
-                Pattern BP = oneItemList[i];
-                BP = Shift(BP, interval);
-                BP = Join(prefix, BP);
 
-                if (ComputeSup(BP) >= minSup)
+                // clone BP to avoid referencing
+                Pattern BP = new Pattern();
+                BP.name = oneItemList[i].name;
+                BP.TIDSet = oneItemList[i].TIDSet.ToList();
+
+                BP = Shift(BP, interval);
+                BP = Join(pre, BP);
+
+                // check if exist at least one transaction
+                if (BP.TIDSet.Count() >= minSup)
                 {
+                    foreach (var item in BP.TIDSet)
+                    {
+                        Debug.WriteLine(BP.name + " " + item);
+                    }
+                    Debug.WriteLine("");
+
                     GenSP(BP, null, 0, 0);
+                    Debug.WriteLine("==========================================");
                     GenBP(BP, i + 1, interval);
                 }
             }
 
 
-            if (prefix != null)
+            if (pre != null)
             {
-                GenBP(prefix, 0, interval + 1);
+                GenBP(pre, 0, interval + 1);
             }
-
-
         }
 
         public void GenSP(Pattern BP, Pattern prefix, int index, int interval)
         {
-            if (interval > MAX_SPAN)
+            Pattern pre = null;
+            if (prefix != null)
+            {
+                pre = new Pattern();
+                pre.name = prefix.name;
+                pre.TIDSet = prefix.TIDSet.ToList();
+            }
+
+            // pattern X = 𝑥1(𝑖1) 𝑥2(𝑖2)⋅⋅⋅𝑥𝑗(𝑖𝑗), where j > 0 and 0 ≥ 𝑖𝑗 ≥ (1 − maxspan)
+            if (interval >= MAX_SPAN)
             {
                 return;
             }
             for (int i = index; i < oneItemList.Count; i++)
             {
                 Pattern SP = new Pattern();
-                SP = oneItemList[i];
-                SP = Shift(SP, interval);
-                SP = Join(prefix, SP);
+                SP.name = oneItemList[i].name;
+                SP.TIDSet = oneItemList[i].TIDSet.ToList();
 
-                if (ComputeSup(SP) >= minSup)
+                SP = Shift(SP, interval);
+                SP = Join(pre, SP);
+
+
+                // check if exist at least one transaction
+                if (SP.TIDSet.Count() >= minSup)
                 {
-                    if (ComparePattern(BP, SP) != 1)
+                    //foreach (var item in SP.TIDSet)
+                    //{
+                    //    Debug.WriteLine(SP.name + " " + item);
+                    //}
+                    //Debug.WriteLine("------------------------");
+                    if (ComparePattern(BP, SP) != 1 && BP.TIDSet.Count() > 0 && SP.TIDSet.Count > 0)
                     {
+
                         lstTradingRule = RuleGenerator(BP, SP);
                         foreach (var trRule in lstTradingRule)
                         {
@@ -113,7 +158,7 @@ namespace sma_core
 
             if (prefix != null)
             {
-                GenSP(BP, prefix, 0, interval + 1);
+                GenSP(BP, pre, 0, interval + 1);
             }
         }
 
@@ -136,8 +181,16 @@ namespace sma_core
             POS pOS = new POS();
             int index = 1;
             bool isBuyTradingCommand = false;
-            List<int> tidBP = tradingRule.BP?.TIDSet;
-            List<int> tidSP = tradingRule.SP?.TIDSet;
+            List<int> tidBP = new List<int>();
+            if(tradingRule.BP?.TIDSet.Count() > 0)
+            {
+                tidBP.AddRange(tradingRule.BP?.TIDSet);
+            }
+            List<int> tidSP = new List<int>();
+            if(tradingRule.SP?.TIDSet.Count() > 0)
+            {
+                tidSP.AddRange(tradingRule.SP?.TIDSet);
+            }
             //
 
             while (tidBP?.Count > 0 && tidSP?.Count > 0)
@@ -243,13 +296,14 @@ namespace sma_core
 
         private Pattern Shift(Pattern pattern, int interval)
         {
+            //if(interval == MAX_SPAN)
             Pattern newParten = new Pattern();
             newParten = pattern;
 
             newParten.name = NewName(newParten.name, interval);
             for (int i = 0; i < newParten.TIDSet.Count; i++)
             {
-                newParten.TIDSet[i] -= interval;
+                newParten.TIDSet[i] += interval;
             }
             return newParten;
         }
@@ -345,34 +399,63 @@ namespace sma_core
             return megaTransactionCount;
         }
 
+        private double getPrice(int tid)
+        {
+            return transactions.FirstOrDefault(trans => trans.TID == tid).Price;
+        }
+
         private int ComparePattern(Pattern BP, Pattern SP)
         {
-            string[] subNameBPs = Regex.Matches(BP.name, @"[a-z]\(.*?\)").Cast<Match>().Select(m => m.Value).ToArray();
-            string[] subNameSPs = Regex.Matches(SP.name, @"[a-z]\(.*?\)").Cast<Match>().Select(m => m.Value).ToArray();
+            string[] subNameBPs = Regex.Matches(BP.name, @"[a-zA-Z]\(.*?\)").Cast<Match>().Select(m => m.Value).ToArray();
+            string[] subNameSPs = Regex.Matches(SP.name, @"[a-zA-Z]\(.*?\)").Cast<Match>().Select(m => m.Value).ToArray();
             int lengthMin = subNameBPs.Length > subNameSPs.Length ? subNameSPs.Length : subNameBPs.Length;
             if (BP.name == SP.name)
             {
                 return 0;
             }
-            else if(subNameBPs.Length < subNameSPs.Length)
+            else if(subNameBPs.Length == subNameSPs.Length && subNameBPs.Length != 0)
             {
-                List<string> names = new List<string>();
-                subNameBPs.ToList().ForEach(name =>
-               {
-                   var nameSP = subNameSPs.FirstOrDefault(o => o == name);
-                   names.Add(nameSP);
-               });
-                subNameBPs = subNameBPs.Except(names).ToArray();
-                if(subNameBPs.Length == 0)
+                Func<Transaction, bool> funcBP = (tid) =>
+                {
+                    return Array.Exists(BP.TIDSet.ToArray(), tidBP => tidBP == tid.TID);
+                };
+
+                Func<Transaction, bool> funcSP = (tid) =>
+                {
+                    return Array.Exists(SP.TIDSet.ToArray(), tidSP => tidSP == tid.TID);
+                };
+
+                double avgBP = transactions.Where(funcBP).Average(o => o.Price);
+                double avgSP = transactions.Where(funcSP).Average(o => o.Price);
+
+                if (avgBP < avgSP) return -1;
+            }
+            else if(subNameBPs.Length < subNameSPs.Length && subNameBPs.Length != 0)
+            {
+                Func<string, bool> func = (name) =>
+                {
+                    return Array.Exists(subNameSPs, nameSP => nameSP == name);
+                };
+
+                if (subNameBPs.Except(subNameSPs.Where(func)).Count() == 0)
                 {
                     return -1;
                 }
-                else
-                {
-                    //to do
-                }
             }
-            
+            else if(subNameSPs.Length != 0)
+            {
+                Func<string, bool> func = (name) =>
+                {
+                    return Array.Exists(subNameBPs, nameBP => nameBP == name);
+                };
+
+                if (subNameSPs.Except(subNameBPs.Where(func)).Count() == 0)
+                {
+                    return -1;
+                }
+
+            }
+
             return 1;
         }
 
@@ -384,19 +467,20 @@ namespace sma_core
         /// <returns></returns>
         private string NewName(String name, int interval)
         {
-            if (!name.Contains("("))
+            string newName = name;
+            if (!newName.Contains("("))
             {
-                return $"{name}(0)";
+                newName = $"{name}(0)";
             }
-            else
-            {
+            
+            if(interval > 0){
                 //int shiftIndex = int.Parse(name.Split('(')[2][0].ToString());
-                List<String> shifts = Regex.Matches(name, @"[0-9]").Cast<Match>().Select(m => m.Value).ToList();
-                List<String> letter = Regex.Matches(name, @"[a-f]").Cast<Match>().Select(m => m.Value).ToList();
+                List<String> shifts = Regex.Matches(newName, @"[0-9]").Cast<Match>().Select(m => m.Value).ToList();
+                List<String> letter = Regex.Matches(newName, @"[a-fA-F]").Cast<Match>().Select(m => m.Value).ToList();
                 int shift = int.Parse(shifts[0]);
-                return $"{letter[0]}({shift - interval})";
+                newName =  $"{letter[0]}({shift - interval})";
             }
-
+            return newName;
         }
 
         #endregion
