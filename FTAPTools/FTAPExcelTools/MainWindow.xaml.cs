@@ -46,7 +46,7 @@ namespace FTAPExcelTools
             InitializeComponent();
             //
             _client = new HttpClient();
-            _client.BaseAddress = new Uri(@"https://localhost:44318/");
+            _client.BaseAddress = new Uri(@"http://localhost:8080/");
             _client.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
             //
             var processes = from p in Process.GetProcessesByName("EXCEL")

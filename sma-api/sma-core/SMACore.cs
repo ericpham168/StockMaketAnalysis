@@ -18,7 +18,7 @@ namespace sma_core
 
         private List<Pattern> oneItemList = new List<Pattern>();
         private int minSup = 0;
-        private List<TradingRule> lstTradingRule = new List<TradingRule>();
+        List<TradingRule> tradingRules = new List<TradingRule>();
         private List<Transaction> transactions = new List<Transaction>();
         TranSactionService service = new TranSactionService();
         public double MinProfit = 0;
@@ -35,7 +35,8 @@ namespace sma_core
             MinWinRate = minWinRate;
             minSup = minWinRate > 0 ? 1 : 0;
             List<string> keys = new List<string>();
-            transactions.Select(trans => trans.Data).ToList().ForEach( data => {
+            transactions.Select(trans => trans.Data).ToList().ForEach(data =>
+            {
                 keys = keys.Concat(data).ToList();
             });
 
@@ -54,12 +55,26 @@ namespace sma_core
 
 
         #region public method
-        public void GenBP(Pattern prefix, int index, int interval)
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <returns></returns>
+        public List<TradingRule> GetRules()
         {
+            tradingRules.Clear();
+            GenBP(null, 0, 0);
+            return tradingRules;
+        }
 
+        #endregion
+
+        #region private method
+        private void GenBP(Pattern prefix, int index, int interval)
+        {
+            List<TradingRule> tradingRules = new List<TradingRule>();
             // clone prefix to avoid referencing
             Pattern pre = null;
-            if(prefix != null)
+            if (prefix != null)
             {
                 pre = new Pattern();
                 pre.name = prefix.name;
@@ -87,14 +102,14 @@ namespace sma_core
                 // check if exist at least one transaction
                 if (BP.TIDSet.Count() >= minSup)
                 {
-                    foreach (var item in BP.TIDSet)
-                    {
-                        Debug.WriteLine(BP.name + " " + item);
-                    }
-                    Debug.WriteLine("");
+                    //foreach (var item in BP.TIDSet)
+                    //{
+                    //    Debug.WriteLine(BP.name + " " + item);
+                    //}
+                    //Debug.WriteLine("");
 
                     GenSP(BP, null, 0, 0);
-                    Debug.WriteLine("==========================================");
+                    //Debug.WriteLine("==========================================");
                     GenBP(BP, i + 1, interval);
                 }
             }
@@ -106,7 +121,7 @@ namespace sma_core
             }
         }
 
-        public void GenSP(Pattern BP, Pattern prefix, int index, int interval)
+        private void GenSP(Pattern BP, Pattern prefix, int index, int interval)
         {
             Pattern pre = null;
             if (prefix != null)
@@ -134,21 +149,21 @@ namespace sma_core
                 // check if exist at least one transaction
                 if (SP.TIDSet.Count() >= minSup)
                 {
-                    //foreach (var item in SP.TIDSet)
-                    //{
-                    //    Debug.WriteLine(SP.name + " " + item);
-                    //}
-                    //Debug.WriteLine("------------------------");
                     if (ComparePattern(BP, SP) != 1 && BP.TIDSet.Count() > 0 && SP.TIDSet.Count > 0)
                     {
-
+                        if (BP.name == "A(0)C(−1)" && SP.name == "B(0)")
+                        {
+                            var x = 0;
+                        }
+                        List<TradingRule> lstTradingRule = new List<TradingRule>();
                         lstTradingRule = RuleGenerator(BP, SP);
                         foreach (var trRule in lstTradingRule)
                         {
-                            TradingResult result = Simulate(trRule);
-                            if (isResultsatisfy(result))
+                            TradingResult tradingResult = Simulate(trRule);
+                            if (isResultsatisfy(tradingResult))
                             {
-                                trRule.tradingResult = result;
+                                trRule.tradingResult = tradingResult;
+                                tradingRules.Add(trRule);
                             }
                         }
                         GenSP(BP, SP, i + 1, interval);
@@ -162,9 +177,6 @@ namespace sma_core
             }
         }
 
-        #endregion
-
-        #region private method
         private bool isResultsatisfy(TradingResult fResult)
         {
             if (fResult.Profit < MinProfit || fResult.Risk > MaxRisk || fResult.WinRate < MinWinRate)
@@ -182,19 +194,22 @@ namespace sma_core
             int index = 1;
             bool isBuyTradingCommand = false;
             List<int> tidBP = new List<int>();
-            if(tradingRule.BP?.TIDSet.Count() > 0)
+            if (tradingRule.BP?.TIDSet.Count() > 0)
             {
                 tidBP.AddRange(tradingRule.BP?.TIDSet);
             }
             List<int> tidSP = new List<int>();
-            if(tradingRule.SP?.TIDSet.Count() > 0)
+            if (tradingRule.SP?.TIDSet.Count() > 0)
             {
                 tidSP.AddRange(tradingRule.SP?.TIDSet);
             }
             //
 
-            while (tidBP?.Count > 0 && tidSP?.Count > 0)
+            // check if exist at least one complete trading order || Sell trading Command and existing sell transactions when buy transaction end. 
+            while ((tidBP?.Count > 0 && tidSP?.Count > 0) || (isBuyTradingCommand && tidSP?.Count > 0))
             {
+
+                // generate all Trading order and Hold position
                 SimulatitonPartern sm = new SimulatitonPartern();
                 sm.TradingOrder = new TradingOrder();
                 sm.TradingResult = new TradingResult();
@@ -203,89 +218,126 @@ namespace sma_core
                 {
                     sm.No = index;
                     sm.TradingOrder.tc = tradingRule.topPriority == TP.SF ? TradingCommands.Sell : TradingCommands.Buy;
+
                     sm.TradingOrder.qty = 1;
-                    sm.TradingOrder.price = sm.TradingOrder.tc == TradingCommands.Buy ? transactions[tidBP[0]].Price : transactions[tidSP[0]].Price;
+                    //transaction start at 0-1-2, tid start at 1-2-3
+                    sm.TradingOrder.price = sm.TradingOrder.tc == TradingCommands.Buy ? transactions[tidBP[0] - 1].Price : transactions[tidSP[0] - 1].Price;
                     sm.TID = sm.TradingOrder.tc == TradingCommands.Buy ? tidBP[0] : tidSP[0];
                     sm.HPOS.mp = sm.TradingOrder.tc == TradingCommands.Buy ? MarketPosition.Long : MarketPosition.Short;
                     sm.HPOS.hqty = 1;
                     sm.HPOS.hprice = sm.TradingOrder.price;
                     //
-                    simulateds.Add(sm);
-                    index++;
                     isBuyTradingCommand = sm.TradingOrder.tc == TradingCommands.Buy ? true : false;
-                    if (tradingRule.topPriority == TP.BF)
-                    {
-                        tidBP.RemoveAt(0);
-                    }
-                    else
-                    {
-                        tidSP.RemoveAt(0);
-                    }
-                    continue;
-                }
 
-                if (isBuyTradingCommand)
-                {
-                    //simutaled trading is sell
-                    sm.No = index;
-                    sm.TradingOrder.tc = TradingCommands.Sell;
-                    sm.TradingOrder.qty = 1;
-                    sm.TradingOrder.price = transactions[tidSP[0]].Price;
-                    sm.TID = tidSP[0];
-                    sm.HPOS.mp = MarketPosition.Short;
-                    sm.HPOS.hqty = 1;
-                    sm.HPOS.hprice = sm.TradingOrder.price;
-                    tidSP.RemoveAt(0);
                 }
                 else
                 {
-                    //simutaled trading is buy
-                    sm.No = index;
-                    sm.TradingOrder.tc = TradingCommands.Buy;
-                    sm.TradingOrder.qty = 1;
-                    sm.TradingOrder.price = transactions[tidBP[0]].Price;
-                    sm.TID = tidBP[0];
-                    sm.HPOS.mp = MarketPosition.Long;
-                    sm.HPOS.hqty = 1;
-                    sm.HPOS.hprice = sm.TradingOrder.price;
+                    if (isBuyTradingCommand)
+                    {
+                        //simutaled trading is sell
+                        sm.No = index;
+                        sm.TradingOrder.tc = TradingCommands.Sell;
+                        sm.TradingOrder.qty = 1;
+                        sm.TradingOrder.price = transactions[tidSP[0] - 1].Price;
+                        sm.TID = tidSP[0];
+                        sm.HPOS.mp = MarketPosition.Short;
+                        sm.HPOS.hqty = 1;
+                        sm.HPOS.hprice = sm.TradingOrder.price;
+                        isBuyTradingCommand = false;
+                    }
+                    else
+                    {
+                        //simutaled trading is buy
+                        sm.No = index;
+                        sm.TradingOrder.tc = TradingCommands.Buy;
+                        sm.TradingOrder.qty = 1;
+                        sm.TradingOrder.price = transactions[tidBP[0] - 1].Price;
+                        sm.TID = tidBP[0];
+                        sm.HPOS.mp = MarketPosition.Long;
+                        sm.HPOS.hqty = 1;
+                        sm.HPOS.hprice = sm.TradingOrder.price;
+                        isBuyTradingCommand = true;
+                    }
+                }
+
+                if (sm.TradingOrder.tc == TradingCommands.Buy)
+                {
+                    if (tidSP[0] == tidBP[0])
+                    {
+                        tidSP.RemoveAt(0);
+                    }
+                    tidBP.RemoveAt(0);
+                }
+                else
+                {
+                    // avoid empty buy pattern 
+                    if (tidBP.Count() > 0 && tidBP[0] == tidSP[0])
+                    {
+                        tidBP.RemoveAt(0);
+                    }
                     tidSP.RemoveAt(0);
                 }
+
                 index++;
                 simulateds.Add(sm);
 
             }
 
-            for (int i = 0; i < simulateds.Count - 1; i++)
+            for (int i = 0; i < simulateds.Count; i++)
             {
                 // set Netprofit
-                simulateds[i].NP = simulateds[i].HPOS.mp == MarketPosition.Long ?
+                // Last record don't have Netprofit
+                simulateds[i].NP = i == (simulateds.Count - 1) ? 0 : simulateds[i].HPOS.mp == MarketPosition.Long ?
                                     simulateds[i + 1].HPOS.hprice - simulateds[i].HPOS.hprice - MAX_SPAN * FEE :
                                     simulateds[i].HPOS.hprice - simulateds[i + 1].HPOS.hprice - MAX_SPAN * FEE;
 
                 // set Consecutive loss
+                //Last record don't have Netprofit
                 simulateds[i].CLoss = i == 0 ? simulateds[i].NP : simulateds[i].NP + simulateds[i - 1].CLoss;
 
-                // set Draw Down 
-                simulateds[i].DD = simulateds[i].HPOS.mp == MarketPosition.Short ? 0 :
-                                        i == 0 ? 0 + Math.Min(simulateds[i].HPOS.hprice, simulateds[i + 1].HPOS.hprice) - simulateds[i].HPOS.hprice :
-                                        simulateds[i - 1].CLoss + Math.Min(simulateds[i].HPOS.hprice, simulateds[i + 1].HPOS.hprice) - simulateds[i].HPOS.hprice;
-                // Set Run UP
-                simulateds[i].RU = simulateds[i].HPOS.mp == MarketPosition.Long ? 0 :
-                                        i == 0 ? 0 - Math.Max(simulateds[i].HPOS.hprice, simulateds[i + 1].HPOS.hprice) + simulateds[i].HPOS.hprice :
-                                        simulateds[i - 1].CLoss - Math.Max(simulateds[i].HPOS.hprice, simulateds[i + 1].HPOS.hprice) + simulateds[i].HPOS.hprice;
-                
+                // Closs could not be positive && Last record don't have Netprofit
+                simulateds[i].CLoss = (simulateds[i].CLoss > 0) || i == (simulateds.Count - 1) ? 0 : simulateds[i].CLoss;
+
+
+                // Set Run UP && Draw Down 
+                if (i == simulateds.Count - 1)
+                {
+                    if (isExistsTID(simulateds[i].TID + 1))
+                    {
+                        simulateds[i].DD = simulateds[i].HPOS.mp == MarketPosition.Short ? 0 :
+                                                i == 0 ? 0 + Math.Min(simulateds[i].HPOS.hprice, GetTransactionPrice(simulateds[i].TID + 1)) - simulateds[i].HPOS.hprice :
+                                                simulateds[i - 1].CLoss + Math.Min(simulateds[i].HPOS.hprice, GetTransactionPrice(simulateds[i].TID + 1)) - simulateds[i].HPOS.hprice;
+
+                        simulateds[i].RU = simulateds[i].HPOS.mp == MarketPosition.Long ? 0 :
+                                                i == 0 ? 0 - Math.Max(simulateds[i].HPOS.hprice, GetTransactionPrice(simulateds[i].TID + 1)) + simulateds[i].HPOS.hprice :
+                                                simulateds[i - 1].CLoss - Math.Max(simulateds[i].HPOS.hprice, GetTransactionPrice(simulateds[i].TID + 1)) + simulateds[i].HPOS.hprice;
+                    }
+                }
+                else
+                {
+                    simulateds[i].DD = simulateds[i].HPOS.mp == MarketPosition.Short ? 0 :
+                                            i == 0 ? 0 + Math.Min(simulateds[i].HPOS.hprice, simulateds[i + 1].HPOS.hprice) - simulateds[i].HPOS.hprice :
+                                            simulateds[i - 1].CLoss + Math.Min(simulateds[i].HPOS.hprice, simulateds[i + 1].HPOS.hprice) - simulateds[i].HPOS.hprice;
+                    simulateds[i].RU = simulateds[i].HPOS.mp == MarketPosition.Long ? 0 :
+                                            i == 0 ? 0 - Math.Max(simulateds[i].HPOS.hprice, simulateds[i + 1].HPOS.hprice) + simulateds[i].HPOS.hprice :
+                                            simulateds[i - 1].CLoss - Math.Max(simulateds[i].HPOS.hprice, simulateds[i + 1].HPOS.hprice) + simulateds[i].HPOS.hprice;
+                }
+
                 // Set Profit
-                simulateds[i].TradingResult.Profit = simulateds.Sum(o => o.NP);
+                simulateds[i].TradingResult.Profit = i == (simulateds.Count - 1) ? 0 : simulateds.Sum(o => o.NP);
 
                 //Set Risk
                 simulateds[i].TradingResult.Risk = i == 0 ? new List<double>() { Absolute(simulateds[i].CLoss), Absolute(simulateds[i].DD), Absolute(simulateds[i].RU) }.Max() :
-                    new List<double>() { Absolute(simulateds[i].CLoss), Absolute(simulateds[i].DD), Absolute(simulateds[i].RU), Absolute(simulateds[i-1].TradingResult.Risk) }.Max() ;
-                
+                    new List<double>() { Absolute(simulateds[i].CLoss), Absolute(simulateds[i].DD), Absolute(simulateds[i].RU), Absolute(simulateds[i - 1].TradingResult.Risk) }.Max();
+
                 //Set WinRate
-                simulateds[i].TradingResult.WinRate = simulateds.Where(o => o.NP > 0).Count() / simulateds.Count() * 100;
+                simulateds[i].TradingResult.WinRate = i == (simulateds.Count - 1) ? 0 : Math.Round(simulateds.Where(o => o.NP > 0).Count() * 1.0 / simulateds[i].No * 100, 0);
             }
 
-            Console.WriteLine(simulateds);
+            tradingResult.Profit = simulateds[simulateds.Count - 2].TradingResult.Profit;
+            tradingResult.Risk = simulateds[simulateds.Count - 1].TradingResult.Risk;
+            tradingResult.WinRate = simulateds[simulateds.Count - 2].TradingResult.WinRate;
+
             return tradingResult;
         }
 
@@ -340,7 +392,7 @@ namespace sma_core
                 trRule1.SP = y;
                 trRule1.topPriority = TP.Both;
                 trRule2.BP = y;
-                trRule2.BP = x;
+                trRule2.SP = x;
                 trRule2.topPriority = TP.Both;
                 lstTradingRule.Add(trRule1);
                 lstTradingRule.Add(trRule2);
@@ -353,7 +405,7 @@ namespace sma_core
                 trRule1.SP = y;
                 trRule1.topPriority = TP.BF;
                 trRule2.BP = x;
-                trRule2.BP = y;
+                trRule2.SP = y;
                 trRule2.topPriority = TP.SF;
                 lstTradingRule.Add(trRule1);
                 lstTradingRule.Add(trRule2);
@@ -367,7 +419,7 @@ namespace sma_core
                 trRule1.SP = y;
                 trRule1.topPriority = TP.BF;
                 trRule2.BP = x;
-                trRule2.BP = y;
+                trRule2.SP = y;
                 trRule2.topPriority = TP.SF;
                 lstTradingRule.Add(trRule1);
                 lstTradingRule.Add(trRule2);
@@ -399,7 +451,20 @@ namespace sma_core
             return megaTransactionCount;
         }
 
-        private double getPrice(int tid)
+        private bool isExistsTID(int tid)
+        {
+            try
+            {
+                var trans = transactions[tid];
+                return true;
+            }
+            catch
+            {
+                return false;
+            }
+        }
+
+        private double GetTransactionPrice(int tid)
         {
             return transactions.FirstOrDefault(trans => trans.TID == tid).Price;
         }
@@ -413,7 +478,7 @@ namespace sma_core
             {
                 return 0;
             }
-            else if(subNameBPs.Length == subNameSPs.Length && subNameBPs.Length != 0)
+            else if (subNameBPs.Length == subNameSPs.Length && subNameBPs.Length != 0)
             {
                 Func<Transaction, bool> funcBP = (tid) =>
                 {
@@ -430,26 +495,26 @@ namespace sma_core
 
                 if (avgBP < avgSP) return -1;
             }
-            else if(subNameBPs.Length < subNameSPs.Length && subNameBPs.Length != 0)
+            else if (subNameBPs.Length < subNameSPs.Length && subNameBPs.Length != 0)
             {
                 Func<string, bool> func = (name) =>
                 {
                     return Array.Exists(subNameSPs, nameSP => nameSP == name);
                 };
 
-                if (subNameBPs.Except(subNameSPs.Where(func)).Count() == 0)
+                if (subNameBPs.Except(subNameSPs.Where(func)).Count() > 0)
                 {
                     return -1;
                 }
             }
-            else if(subNameSPs.Length != 0)
+            else if (subNameSPs.Length != 0)
             {
                 Func<string, bool> func = (name) =>
                 {
                     return Array.Exists(subNameBPs, nameBP => nameBP == name);
                 };
 
-                if (subNameSPs.Except(subNameBPs.Where(func)).Count() == 0)
+                if (subNameSPs.Except(subNameBPs.Where(func)).Count() > 0)
                 {
                     return -1;
                 }
@@ -472,13 +537,14 @@ namespace sma_core
             {
                 newName = $"{name}(0)";
             }
-            
-            if(interval > 0){
+
+            if (interval > 0)
+            {
                 //int shiftIndex = int.Parse(name.Split('(')[2][0].ToString());
                 List<String> shifts = Regex.Matches(newName, @"[0-9]").Cast<Match>().Select(m => m.Value).ToList();
                 List<String> letter = Regex.Matches(newName, @"[a-fA-F]").Cast<Match>().Select(m => m.Value).ToList();
                 int shift = int.Parse(shifts[0]);
-                newName =  $"{letter[0]}({shift - interval})";
+                newName = $"{letter[0]}({shift - interval})";
             }
             return newName;
         }

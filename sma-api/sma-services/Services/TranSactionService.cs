@@ -17,5 +17,17 @@ namespace sma_services.Services
         {
             return db.Transactions.ToList(); 
         }
+
+        public void AddTransactions(List<Transaction> transactions)
+        {
+            db.AddRange(transactions);
+            db.SaveChanges(true);
+        }
+
+        public void RemoveAll()
+        {
+            db.Transactions.RemoveRange(db.Transactions);
+            db.SaveChanges(true);
+        }
     }
 }
