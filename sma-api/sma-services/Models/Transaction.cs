@@ -32,5 +32,10 @@ namespace sma_services.Models
             }
         }
         public double Price { get; set; }
+
+        [ForeignKey("TickerID")]
+        public int TickerID { get; set; }
+
+        public TickerTranSaction TickerTranSaction { get; set; }
     }
 }

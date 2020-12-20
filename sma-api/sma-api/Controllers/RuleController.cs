@@ -1,18 +1,13 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Cors;
+using Microsoft.AspNetCore.Mvc;
 using sma_core;
-using sma_services.Models;
-using sma_services.Services;
-using System;
 using System.Collections.Generic;
-using System.Threading.Tasks;
 
 namespace sma_api.Controllers
 {
     [ApiController]
     public class RuleController : ControllerBase
     {
-
-        private readonly TranSactionService _context = new TranSactionService();
 
         //
         [Route("api/rule")]
@@ -23,36 +18,20 @@ namespace sma_api.Controllers
         }
 
         /// get rule api
-        [Route("api/rule/{minProfit}/{maxRisk}/{minWinRate}")]
+        [Route("api/rule/{minProfit}/{maxRisk}/{minWinRate}/{tickerID}")]
+        [EnableCors("policy")]
         [HttpGet]
-        public IActionResult GetRule(double minProfit, double maxRisk, double minWinRate)
+        public IActionResult GetRule(double minProfit, double maxRisk, double minWinRate,int tickerID)
         {
             try
             {
-                SMACore smaCore = new SMACore(minProfit, maxRisk, minWinRate);
+                SMACore smaCore = new SMACore(minProfit, maxRisk, minWinRate,tickerID);
                 List<TradingRule> tradingRules = smaCore.GetRules();
                 return Ok(tradingRules);
             }
             catch
             {
                 return StatusCode(404, "Error");
-            }
-        }
-
-        /// post transaction list api
-        [Route("api/rule")]
-        [HttpPost]
-        public IActionResult PostTransactions([FromBody] List<Transaction> transactions)
-        {
-            try
-            {
-                _context.RemoveAll();
-                _context.AddTransactions(transactions);
-                return Ok();
-            }
-            catch
-            {
-                return StatusCode(500, "Internal server error");
             }
         }
     }

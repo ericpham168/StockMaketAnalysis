@@ -27,9 +27,9 @@ namespace sma_core
         #endregion
 
         #region contrucstor
-        public SMACore(double minProfit, double maxRisk, double minWinRate)
+        public SMACore(double minProfit, double maxRisk, double minWinRate,int tickerID)
         {
-            transactions = service.GetListTranSaction();
+            transactions = service.GetListTranSaction(tickerID);
             MinProfit = minProfit;
             MaxRisk = maxRisk;
             MinWinRate = minWinRate;
@@ -98,18 +98,16 @@ namespace sma_core
 
                 BP = Shift(BP, interval);
                 BP = Join(pre, BP);
+                //foreach (var item in BP.TIDSet)
+                //{
+                //    Debug.WriteLine(BP.name + " " + item);
+                //}
 
                 // check if exist at least one transaction
                 if (BP.TIDSet.Count() >= minSup)
                 {
-                    //foreach (var item in BP.TIDSet)
-                    //{
-                    //    Debug.WriteLine(BP.name + " " + item);
-                    //}
-                    //Debug.WriteLine("");
-
+                    
                     GenSP(BP, null, 0, 0);
-                    //Debug.WriteLine("==========================================");
                     GenBP(BP, i + 1, interval);
                 }
             }
@@ -144,19 +142,26 @@ namespace sma_core
 
                 SP = Shift(SP, interval);
                 SP = Join(pre, SP);
-
+                
+                //Debug.WriteLine("------------- GenSP ----------------");
+                //foreach (var item in SP.TIDSet)
+                //{
+                //    Debug.WriteLine(SP.name + " " + item + "  ");
+                //}
+                //Debug.WriteLine("");
 
                 // check if exist at least one transaction
                 if (SP.TIDSet.Count() >= minSup)
                 {
+
                     if (ComparePattern(BP, SP) != 1 && BP.TIDSet.Count() > 0 && SP.TIDSet.Count > 0)
                     {
-                        if (BP.name == "A(0)C(−1)" && SP.name == "B(0)")
+                        List<TradingRule> lstTradingRule = new List<TradingRule>();
+                        lstTradingRule = RuleGenerator(BP, SP);
+                        if (BP.name == "A(0)C(-1)")
                         {
                             var x = 0;
                         }
-                        List<TradingRule> lstTradingRule = new List<TradingRule>();
-                        lstTradingRule = RuleGenerator(BP, SP);
                         foreach (var trRule in lstTradingRule)
                         {
                             TradingResult tradingResult = Simulate(trRule);
@@ -302,7 +307,7 @@ namespace sma_core
                 // Set Run UP && Draw Down 
                 if (i == simulateds.Count - 1)
                 {
-                    if (isExistsTID(simulateds[i].TID + 1))
+                    if (isExistsTID(simulateds[i].TID))
                     {
                         simulateds[i].DD = simulateds[i].HPOS.mp == MarketPosition.Short ? 0 :
                                                 i == 0 ? 0 + Math.Min(simulateds[i].HPOS.hprice, GetTransactionPrice(simulateds[i].TID + 1)) - simulateds[i].HPOS.hprice :
@@ -335,7 +340,7 @@ namespace sma_core
             }
 
             tradingResult.Profit = simulateds[simulateds.Count - 2].TradingResult.Profit;
-            tradingResult.Risk = simulateds[simulateds.Count - 1].TradingResult.Risk;
+            tradingResult.Risk = isExistsTID(simulateds[simulateds.Count - 1].TID) ? simulateds[simulateds.Count - 1].TradingResult.Risk : simulateds[simulateds.Count - 2].TradingResult.Risk;
             tradingResult.WinRate = simulateds[simulateds.Count - 2].TradingResult.WinRate;
 
             return tradingResult;

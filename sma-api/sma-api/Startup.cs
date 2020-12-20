@@ -20,6 +20,13 @@ namespace sma_api
         // This method gets called by the runtime. Use this method to add services to the container.
         public void ConfigureServices(IServiceCollection services)
         {
+            services.AddCors(cors => cors.AddPolicy("policy", builder =>
+            {
+                builder.AllowAnyOrigin()
+                        .AllowAnyHeader()
+                        .AllowAnyMethod();
+            }));
+
             //// config connection
             services.AddControllers();
 
@@ -38,6 +45,10 @@ namespace sma_api
             app.UseHttpsRedirection();
 
             app.UseRouting();
+
+            app.UseCors("policy");
+
+            app.UseAuthentication();
 
             app.UseAuthorization();
 
