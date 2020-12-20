@@ -1,22 +1,13 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Cors;
+using Microsoft.AspNetCore.Mvc;
 using sma_core;
-using sma_services.Models;
-using System;
 using System.Collections.Generic;
-using System.Threading.Tasks;
 
 namespace sma_api.Controllers
 {
     [ApiController]
     public class RuleController : ControllerBase
     {
-
-        private readonly TransactionContext _context = new TransactionContext();
-
-        public RuleController(TransactionContext context)
-        {
-            _context = context;
-        }
 
         //
         [Route("api/rule")]
@@ -27,30 +18,20 @@ namespace sma_api.Controllers
         }
 
         /// get rule api
-        [Route("api/rule/{minProfit}/{maxRisk}/{minWinRate}")]
+        [Route("api/rule/{minProfit}/{maxRisk}/{minWinRate}/{tickerID}")]
+        [EnableCors("policy")]
         [HttpGet]
-        public void GetRule(double minProfit, double maxRisk, double minWinRate)
-        {
-            
-            
-            SMACore smaCore = new SMACore(minProfit, maxRisk, minWinRate);
-            smaCore.GenBP(null, 0, 0);
-        }
-
-        /// post transaction list api
-        [Route("api/rule")]
-        [HttpPost]
-        public IActionResult PostTransactions([FromBody] List<Transaction> transactions)
+        public IActionResult GetRule(double minProfit, double maxRisk, double minWinRate,int tickerID)
         {
             try
             {
-                _context.AddRange(transactions);
-                _context.SaveChanges(true);
-                return Ok();
+                SMACore smaCore = new SMACore(minProfit, maxRisk, minWinRate,tickerID);
+                List<TradingRule> tradingRules = smaCore.GetRules();
+                return Ok(tradingRules);
             }
-            catch (Exception ex)
+            catch
             {
-                return StatusCode(500, "Internal server error");
+                return StatusCode(404, "Error");
             }
         }
     }

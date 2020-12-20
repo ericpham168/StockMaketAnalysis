@@ -26,11 +26,17 @@ namespace sma_services.Models
         {
 
         }
-        public DbSet<Transaction> Transactions { get; set; }
+        public virtual DbSet<Transaction> Transactions { get; set; }
+        public virtual DbSet<TickerTranSaction> TickerTranSactions { get; set; }
 
         protected override void OnModelCreating(ModelBuilder builder)
         {
-            builder.Entity<Transaction>();
+            builder.Entity<TickerTranSaction>()
+                .HasMany(trans => trans.Transactions)
+                .WithOne(Ticker => Ticker.TickerTranSaction)
+                .HasForeignKey(trans => trans.TickerID);
+
+            builder.Entity<TickerTranSaction>().HasIndex(o => o.Ticker).IsUnique();
         }
     }
 }

@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 
-namespace FTAPExcelTools
+namespace FTAPExcelTools.Models
 {
     public class Transaction
     {
@@ -22,5 +22,7 @@ namespace FTAPExcelTools
         //    }
         //}
         public double Price { get; set; }
+
+        public int TickerID { get; set; }
     }
 }
