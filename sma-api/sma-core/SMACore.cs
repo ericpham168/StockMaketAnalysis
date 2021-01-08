@@ -389,18 +389,30 @@ namespace sma_core
         {
             List<TradingRule> lstTradingRule = new List<TradingRule>();
 
-            if (x.TIDSet[0] != y.TIDSet[0])
+            if (x.TIDSet[0] != y.TIDSet[0] || ComparePattern(x, y) == -1)
             {
                 TradingRule trRule1 = new TradingRule();
                 TradingRule trRule2 = new TradingRule();
+                TradingRule trRule3 = new TradingRule();
+                TradingRule trRule4 = new TradingRule();
+                //
                 trRule1.BP = x;
                 trRule1.SP = y;
-                trRule1.topPriority = TP.Both;
-                trRule2.BP = y;
-                trRule2.SP = x;
-                trRule2.topPriority = TP.Both;
+                trRule1.topPriority = TP.BF;
+                trRule2.BP = x;
+                trRule2.SP = y;
+                trRule2.topPriority = TP.SF;
+                trRule3.BP = y;
+                trRule3.SP = x;
+                trRule3.topPriority = TP.BF;
+                trRule4.BP = y;
+                trRule4.SP = x;
+                trRule4.topPriority = TP.SF;
+                //
                 lstTradingRule.Add(trRule1);
                 lstTradingRule.Add(trRule2);
+                lstTradingRule.Add(trRule3);
+                lstTradingRule.Add(trRule4);
             }
             else if (ComparePattern(x, y) == 0)
             {
@@ -416,24 +428,7 @@ namespace sma_core
                 lstTradingRule.Add(trRule2);
 
             }
-            else if (ComparePattern(x, y) == -1)
-            {
-                TradingRule trRule1 = new TradingRule();
-                TradingRule trRule2 = new TradingRule();
-                trRule1.BP = x;
-                trRule1.SP = y;
-                trRule1.topPriority = TP.BF;
-                trRule2.BP = x;
-                trRule2.SP = y;
-                trRule2.topPriority = TP.SF;
-                lstTradingRule.Add(trRule1);
-                lstTradingRule.Add(trRule2);
-
-            }
-
             return lstTradingRule;
-
-
         }
 
         /// <summary>

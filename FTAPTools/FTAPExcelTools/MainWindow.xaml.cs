@@ -39,7 +39,7 @@ namespace FTAPExcelTools
             InitializeComponent();
             //
             _client = new HttpClient();
-            _client.BaseAddress = new Uri(@"http://localhost:8080/");
+            _client.BaseAddress = new Uri(@"https://localhost:5004/");
             _client.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
             //
             var processes = from p in Process.GetProcessesByName("EXCEL")
@@ -73,16 +73,16 @@ namespace FTAPExcelTools
             WB.Sheets.Add(After: WB.Sheets[WB.Sheets.Count]);
             Excel.Worksheet wksProcessed = (Excel.Worksheet)WB.Worksheets[2];
 
-            int totalRows = wks.UsedRange.Rows.Count;
+            int totalRows = wks.UsedRange.Rows.Count > 1001 ? 1001 : wks.UsedRange.Rows.Count;
             int totalColumns = wks.UsedRange.Columns.Count;
             List<ColumnsExcel> columnsHeader = new List<ColumnsExcel>();
             int newIndex = 1;
             int tickerIndex = -1;
             string pathUseFile = string.Empty;
+            int countdownIndex = 2;
 
             ProgressDialogResult resultLog = FTAPExcelTools.ProgressDialog.ProgressDialog.Execute(Application.Current.Windows.OfType<Window>().Where(o => o.Name == "mainWindow").SingleOrDefault(), "Importing Data... plz watting !!", (bw) =>
             {
-
                 for (int i = 1; i <= totalColumns; i++)
                 {
                     string header = ((Excel.Range)wks.Cells[1, i]).Value?.ToString();
@@ -125,13 +125,21 @@ namespace FTAPExcelTools
                     Ticker = ((Excel.Range)wks.Cells[2, tickerIndex]).Value;
                 }
 
-                Parallel.For(2, totalRows + 1, row =>
+                for (int row = totalRows; row > 1; row--)
                 {
-                    Parallel.ForEach(columnsHeader, col =>
-                    {
-                        ((Excel.Range)wksProcessed.Cells[row, col.NewIndex]).Value = ((Excel.Range)wks.Cells[row, col.ColumnIndex]).Value;
+                    columnsHeader.ForEach( col => {
+                        ((Excel.Range)wksProcessed.Cells[countdownIndex, col.NewIndex]).Value = ((Excel.Range)wks.Cells[row, col.ColumnIndex]).Value;
                     });
-                });
+                    countdownIndex++;
+                }
+
+                //Parallel.For(2, totalRows , row =>
+                //{
+                //    Parallel.ForEach(columnsHeader, col =>
+                //    {
+                //        ((Excel.Range)wksProcessed.Cells[row, col.NewIndex]).Value = ((Excel.Range)wks.Cells[row, col.ColumnIndex]).Value;
+                //    });
+                //});
 
                 //for (int row = 2; row <= totalRows; row++)
                 //{
