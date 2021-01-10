@@ -11,18 +11,20 @@
         Title="Import Data Tool" Height="200" Width="600">
     <Grid>
         <Grid.RowDefinitions>
-            <RowDefinition />
-            <RowDefinition />
+            <RowDefinition Height="auto" />
+            <RowDefinition Height="*" />
+            <RowDefinition Height="*" />
         </Grid.RowDefinitions>
         <Grid.ColumnDefinitions>
             <ColumnDefinition Width="3*" />
             <ColumnDefinition Width="*"/>
         </Grid.ColumnDefinitions>
-        <Border Height="50" Margin="20 0" BorderThickness="1" BorderBrush="Gray">
+        <TextBlock Text="Import Tool" FontSize="30" FontWeight="Bold" VerticalAlignment="Center" Margin="20 0 " />
+        <Border Grid.Row="1" Height="50" Margin="20 0" BorderThickness="1" BorderBrush="Gray">
             <TextBlock x:Name="tvPath" FontSize="25" VerticalAlignment="Center" Padding="20 0" />
         </Border>
-        <Button Grid.Column="1"  HorizontalAlignment="Center" Content="..." FontWeight="Bold" FontSize="20" Height="40" Width="120" Click="Button_Click_1"  />
-        <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" VerticalAlignment="Center" Grid.Row="1" Grid.ColumnSpan="2">
+        <Button Grid.Column="1" Grid.Row="1"  HorizontalAlignment="Center" Content="..." FontWeight="Bold" FontSize="20" Height="40" Width="120" Click="Button_Click_1"  />
+        <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" VerticalAlignment="Center" Grid.Row="2" Grid.ColumnSpan="2">
             <!--<Button  Content="Generate Excel" Margin="20 0" FontWeight="Bold" FontSize="20" Height="50" Width="160" Click="Button_Click"  />-->
             <Button  Content="Import Database" FontWeight="Bold" FontSize="20" Height="50" Width="180" Click="Button_Click_2"  />
         </StackPanel>

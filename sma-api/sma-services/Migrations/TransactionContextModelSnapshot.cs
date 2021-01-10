@@ -39,8 +39,10 @@ namespace sma_services.Migrations
 
             modelBuilder.Entity("sma_services.Models.Transaction", b =>
                 {
-                    b.Property<int>("TID")
-                        .HasColumnType("int");
+                    b.Property<int>("ID")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int")
+                        .UseIdentityColumn();
 
                     b.Property<string>("ItemSet")
                         .HasColumnType("nvarchar(max)");
@@ -48,10 +50,13 @@ namespace sma_services.Migrations
                     b.Property<double>("Price")
                         .HasColumnType("float");
 
+                    b.Property<int>("TID")
+                        .HasColumnType("int");
+
                     b.Property<int>("TickerID")
                         .HasColumnType("int");
 
-                    b.HasKey("TID");
+                    b.HasKey("ID");
 
                     b.HasIndex("TickerID");
 

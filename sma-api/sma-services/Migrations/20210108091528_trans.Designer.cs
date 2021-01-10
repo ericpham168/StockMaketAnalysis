@@ -9,7 +9,7 @@ using sma_services.Models;
 namespace sma_services.Migrations
 {
     [DbContext(typeof(TransactionContext))]
-    [Migration("20201219090345_trans")]
+    [Migration("20210108091528_trans")]
     partial class trans
     {
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -41,8 +41,10 @@ namespace sma_services.Migrations
 
             modelBuilder.Entity("sma_services.Models.Transaction", b =>
                 {
-                    b.Property<int>("TID")
-                        .HasColumnType("int");
+                    b.Property<int>("ID")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int")
+                        .UseIdentityColumn();
 
                     b.Property<string>("ItemSet")
                         .HasColumnType("nvarchar(max)");
@@ -50,10 +52,13 @@ namespace sma_services.Migrations
                     b.Property<double>("Price")
                         .HasColumnType("float");
 
+                    b.Property<int>("TID")
+                        .HasColumnType("int");
+
                     b.Property<int>("TickerID")
                         .HasColumnType("int");
 
-                    b.HasKey("TID");
+                    b.HasKey("ID");
 
                     b.HasIndex("TickerID");
 

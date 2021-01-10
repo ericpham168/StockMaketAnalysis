@@ -18,7 +18,6 @@
     },
     "sma_api": {
       "commandName": "Project",
-      "launchBrowser": true,
       "launchUrl": "api/rule",
       "environmentVariables": {
         "ASPNETCORE_ENVIRONMENT": "Development"

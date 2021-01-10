@@ -7,6 +7,7 @@ using System.Diagnostics;
 using System.Linq;
 using System.Text;
 using System.Text.RegularExpressions;
+using System.Threading.Tasks;
 
 namespace sma_core
 {
@@ -27,9 +28,9 @@ namespace sma_core
         #endregion
 
         #region contrucstor
-        public SMACore(double minProfit, double maxRisk, double minWinRate,int tickerID)
+        public SMACore(double minProfit, double maxRisk, double minWinRate, int tickerID)
         {
-            transactions = service.GetListTranSaction(tickerID);
+            transactions = service.GetListTranSaction(tickerID).OrderBy(trans => trans.TID).ToList();
             MinProfit = minProfit;
             MaxRisk = maxRisk;
             MinWinRate = minWinRate;
@@ -106,7 +107,7 @@ namespace sma_core
                 // check if exist at least one transaction
                 if (BP.TIDSet.Count() >= minSup)
                 {
-                    
+
                     GenSP(BP, null, 0, 0);
                     GenBP(BP, i + 1, interval);
                 }
@@ -142,7 +143,7 @@ namespace sma_core
 
                 SP = Shift(SP, interval);
                 SP = Join(pre, SP);
-                
+
                 //Debug.WriteLine("------------- GenSP ----------------");
                 //foreach (var item in SP.TIDSet)
                 //{
@@ -168,7 +169,36 @@ namespace sma_core
                             if (isResultsatisfy(tradingResult))
                             {
                                 trRule.tradingResult = tradingResult;
-                                tradingRules.Add(trRule);
+                                if (tradingRules.Count > 1)
+                                {
+                                    var x = 0;
+                                }
+                                if (tradingRules.Count > 0)
+                                {
+                                    bool isPatternSame = false;
+                                    foreach (var o in tradingRules)
+                                    {
+                                        if (trRule.BP.name == o.BP.name && trRule.SP.name == o.SP.name && trRule.topPriority == o.topPriority)
+                                        {
+                                            isPatternSame = true;
+                                            break;
+                                        }
+                                    }
+                                    //Parallel.ForEach(tradingRules, o =>
+                                    //{
+                                    //    if (trRule.BP.name == o.BP.name && trRule.SP.name == o.SP.name && trRule.topPriority == o.topPriority)
+                                    //    {
+                                    //        isPatternSame = true;
+                                    //    }
+                                    //});
+                                    if (!isPatternSame)
+                                        tradingRules.Add(trRule);
+
+                                }
+                                else
+                                {
+                                    tradingRules.Add(trRule);
+                                }
                             }
                         }
                         GenSP(BP, SP, i + 1, interval);
@@ -339,9 +369,10 @@ namespace sma_core
                 simulateds[i].TradingResult.WinRate = i == (simulateds.Count - 1) ? 0 : Math.Round(simulateds.Where(o => o.NP > 0).Count() * 1.0 / simulateds[i].No * 100, 0);
             }
 
-            tradingResult.Profit = simulateds[simulateds.Count - 2].TradingResult.Profit;
+            // to do
+            tradingResult.Profit = simulateds.Count >= 2 ? simulateds[simulateds.Count - 2].TradingResult.Profit : simulateds[simulateds.Count - 1].TradingResult.Profit;
             tradingResult.Risk = isExistsTID(simulateds[simulateds.Count - 1].TID) ? simulateds[simulateds.Count - 1].TradingResult.Risk : simulateds[simulateds.Count - 2].TradingResult.Risk;
-            tradingResult.WinRate = simulateds[simulateds.Count - 2].TradingResult.WinRate;
+            tradingResult.WinRate = simulateds.Count >= 2 ? simulateds[simulateds.Count - 2].TradingResult.WinRate : simulateds[simulateds.Count - 1].TradingResult.WinRate;
 
             return tradingResult;
         }

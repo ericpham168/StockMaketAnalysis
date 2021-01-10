@@ -23,6 +23,8 @@ namespace sma_services.Migrations
                 name: "Transactions",
                 columns: table => new
                 {
+                    ID = table.Column<int>(type: "int", nullable: false)
+                        .Annotation("SqlServer:Identity", "1, 1"),
                     TID = table.Column<int>(type: "int", nullable: false),
                     ItemSet = table.Column<string>(type: "nvarchar(max)", nullable: true),
                     Price = table.Column<double>(type: "float", nullable: false),
@@ -30,7 +32,7 @@ namespace sma_services.Migrations
                 },
                 constraints: table =>
                 {
-                    table.PrimaryKey("PK_Transactions", x => x.TID);
+                    table.PrimaryKey("PK_Transactions", x => x.ID);
                     table.ForeignKey(
                         name: "FK_Transactions_TickerTranSactions_TickerID",
                         column: x => x.TickerID,

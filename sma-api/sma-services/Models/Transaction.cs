@@ -9,7 +9,8 @@ namespace sma_services.Models
     public class Transaction
     {
         [Key]
-        [DatabaseGenerated(DatabaseGeneratedOption.None)]
+        [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
+        public int ID { get; set; }
         public int TID { get; set; }
         public string ItemSet { get; set; }
 

@@ -1,6 +1,7 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using sma_services.Models;
 using sma_services.Services;
+using System;
 using System.Collections.Generic;
 
 namespace sma_api.Controllers
@@ -20,8 +21,9 @@ namespace sma_api.Controllers
                 _context.AddTransactions(transactions);
                 return Ok();
             }
-            catch
+            catch(Exception ex)
             {
+                ex.ToString();
                 return StatusCode(404, "Error");
             }
         }

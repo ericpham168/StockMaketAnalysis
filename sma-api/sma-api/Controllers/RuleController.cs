@@ -1,6 +1,7 @@
 ﻿using Microsoft.AspNetCore.Cors;
 using Microsoft.AspNetCore.Mvc;
 using sma_core;
+using System;
 using System.Collections.Generic;
 
 namespace sma_api.Controllers
@@ -29,8 +30,9 @@ namespace sma_api.Controllers
                 List<TradingRule> tradingRules = smaCore.GetRules();
                 return Ok(tradingRules);
             }
-            catch
+            catch(Exception e)
             {
+                e.Message.ToString();
                 return StatusCode(404, "Error");
             }
         }

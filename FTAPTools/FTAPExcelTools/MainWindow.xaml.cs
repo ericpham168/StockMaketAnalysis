@@ -409,20 +409,20 @@ namespace FTAPExcelTools
             int totalColumns = wks.UsedRange.Columns.Count;
             ProgressDialogResult resultLog = FTAPExcelTools.ProgressDialog.ProgressDialog.Execute(Application.Current.Windows.OfType<Window>().Where(o => o.Name == "mainWindow").SingleOrDefault(), "Importing Data... plz watting !!", (bw) =>
             {
-                Parallel.For(2, totalRows + 1, i =>
-                {
-                    Transaction transaction = new Transaction();
-                    transaction.TID = ((Excel.Range)wks.Cells[i, 1]).Value?.ToString() != null ?
-                                            Int32.Parse(((Excel.Range)wks.Cells[i, 1]).Value?.ToString()) : 0;
-                    transaction.ItemSet = ((Excel.Range)wks.Cells[i, 2]).Value?.ToString();
-                    transaction.Price = ((Excel.Range)wks.Cells[i, 3]).Value?.ToString() != null ?
-                                            Double.Parse(((Excel.Range)wks.Cells[i, 3]).Value?.ToString()) : 0;
-                    transaction.TickerID = tickerID;
+                //Parallel.For(2, totalRows + 1, i =>
+                //{
+                //    Transaction transaction = new Transaction();
+                //    transaction.TID = ((Excel.Range)wks.Cells[i, 1]).Value?.ToString() != null ?
+                //                            Int32.Parse(((Excel.Range)wks.Cells[i, 1]).Value?.ToString()) : 0;
+                //    transaction.ItemSet = ((Excel.Range)wks.Cells[i, 2]).Value?.ToString();
+                //    transaction.Price = ((Excel.Range)wks.Cells[i, 3]).Value?.ToString() != null ?
+                //                            Double.Parse(((Excel.Range)wks.Cells[i, 3]).Value?.ToString()) : 0;
+                //    transaction.TickerID = tickerID;
 
-                    transactions.Add(transaction);
-                });
+                //    transactions.Add(transaction);
+                //});
 
-                /*
+
                 for (int i = 2; i <= totalRows; i++)
                 {
                     Transaction transaction = new Transaction();
@@ -434,7 +434,7 @@ namespace FTAPExcelTools
                     transaction.TickerID = tickerID;
 
                     transactions.Add(transaction);
-                }*/
+                }
             });
             WB.Close();
             oExcel.Quit();
