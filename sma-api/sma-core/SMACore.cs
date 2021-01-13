@@ -1,9 +1,11 @@
-﻿using sma_core.Models;
+﻿using Newtonsoft.Json;
+using sma_core.Models;
 using sma_services.Models;
 using sma_services.Services;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.IO;
 using System.Linq;
 using System.Text;
 using System.Text.RegularExpressions;
@@ -25,6 +27,11 @@ namespace sma_core
         public double MinProfit = 0;
         public double MaxRisk = 0;
         public double MinWinRate = 0;
+
+        //json list
+        private List<Pattern> BuyPatterns = new List<Pattern>();
+        private List<Pattern> SellPatterns = new List<Pattern>();
+        private List<TradingRule> AllRule = new List<TradingRule>();
         #endregion
 
         #region contrucstor
@@ -64,6 +71,7 @@ namespace sma_core
         {
             tradingRules.Clear();
             GenBP(null, 0, 0);
+            WriteZloc();
             return tradingRules;
         }
 
@@ -99,10 +107,8 @@ namespace sma_core
 
                 BP = Shift(BP, interval);
                 BP = Join(pre, BP);
-                //foreach (var item in BP.TIDSet)
-                //{
-                //    Debug.WriteLine(BP.name + " " + item);
-                //}
+                // json 
+                BuyPatterns.Add(BP);
 
                 // check if exist at least one transaction
                 if (BP.TIDSet.Count() >= minSup)
@@ -144,12 +150,8 @@ namespace sma_core
                 SP = Shift(SP, interval);
                 SP = Join(pre, SP);
 
-                //Debug.WriteLine("------------- GenSP ----------------");
-                //foreach (var item in SP.TIDSet)
-                //{
-                //    Debug.WriteLine(SP.name + " " + item + "  ");
-                //}
-                //Debug.WriteLine("");
+                // json 
+                SellPatterns.Add(SP);
 
                 // check if exist at least one transaction
                 if (SP.TIDSet.Count() >= minSup)
@@ -166,6 +168,11 @@ namespace sma_core
                         foreach (var trRule in lstTradingRule)
                         {
                             TradingResult tradingResult = Simulate(trRule);
+                            // json 
+                            TradingRule rule = new TradingRule();
+                            rule.tradingResult = tradingResult;
+                            AllRule.Add(rule);
+
                             if (isResultsatisfy(tradingResult))
                             {
                                 trRule.tradingResult = tradingResult;
@@ -581,6 +588,26 @@ namespace sma_core
                 newName = $"{letter[0]}({shift - interval})";
             }
             return newName;
+        }
+
+        private void WriteZloc()
+        {
+            try
+            {
+                string FolderPath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.Desktop), "JsonData");
+                // If directory does not exist, create it. 
+                if (!Directory.Exists(FolderPath))
+                {
+                    Directory.CreateDirectory(FolderPath);
+                }
+                File.WriteAllText(Path.Combine(FolderPath, "BP"), JsonConvert.SerializeObject(BuyPatterns.ToList()));
+                File.WriteAllText(Path.Combine(FolderPath, "SP"), JsonConvert.SerializeObject(SellPatterns.ToList()));
+                File.WriteAllText(Path.Combine(FolderPath, "Rule"), JsonConvert.SerializeObject(AllRule.ToList()));
+            }
+            catch (Exception ex)
+            {
+                throw new Exception(ex.Message);
+            }
         }
 
         #endregion
