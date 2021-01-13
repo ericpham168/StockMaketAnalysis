@@ -509,6 +509,7 @@ namespace sma_core
             {
                 return 0;
             }
+            // compare based on price if two pattern are same length
             else if (subNameBPs.Length == subNameSPs.Length && subNameBPs.Length != 0)
             {
                 Func<Transaction, bool> funcBP = (tid) =>
@@ -526,6 +527,7 @@ namespace sma_core
 
                 if (avgBP < avgSP) return -1;
             }
+            // when BP length < SP length. Remove all same 1-pattern. the pattern, null at first, is > the rest. 
             else if (subNameBPs.Length < subNameSPs.Length && subNameBPs.Length != 0)
             {
                 Func<string, bool> func = (name) =>
@@ -538,6 +540,7 @@ namespace sma_core
                     return -1;
                 }
             }
+            //
             else if (subNameSPs.Length != 0)
             {
                 Func<string, bool> func = (name) =>
