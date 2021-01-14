@@ -507,7 +507,7 @@ namespace sma_core
             string[] subNameBPs = Regex.Matches(BP.name, @"[a-zA-Z]\(.*?\)").Cast<Match>().Select(m => m.Value).ToArray();
             string[] subNameSPs = Regex.Matches(SP.name, @"[a-zA-Z]\(.*?\)").Cast<Match>().Select(m => m.Value).ToArray();
             int lengthMin = subNameBPs.Length > subNameSPs.Length ? subNameSPs.Length : subNameBPs.Length;
-            if (BP.name == SP.name)
+            if (BP.name == SP.name && BP.TIDSet[0] == 0 && SP.TIDSet[0] == 0 && BP.TIDSet.Count > 0 && SP.TIDSet.Count > 0)
             {
                 return 0;
             }
