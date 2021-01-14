@@ -512,49 +512,44 @@ namespace sma_core
                 return 0;
             }
             // compare based on price if two pattern are same   
-            else if (subNameBPs.Length == subNameSPs.Length && subNameBPs.Length != 0)
+            else if(subNameBPs.Length > 0 && subNameSPs.Length > 0)
             {
-                Func<Transaction, bool> funcBP = (tid) =>
+                int length = subNameBPs.Length > subNameSPs.Length ? subNameSPs.Length : subNameBPs.Length;
+                for (int i = 0; i < length; i++)
                 {
-                    return Array.Exists(BP.TIDSet.ToArray(), tidBP => tidBP == tid.TID);
-                };
+                    if(subNameBPs[i] != subNameSPs[i])
+                    {
+                        string [] letterBP = Regex.Matches(subNameBPs[i], @"[a-fA-F]").Cast<Match>().Select(m => m.Value).ToArray();
+                        string [] letterSP = Regex.Matches(subNameSPs[i], @"[a-fA-F]").Cast<Match>().Select(m => m.Value).ToArray();
+                        string [] shiftsBP = Regex.Matches(subNameBPs[i], @"-?[0-9]").Cast<Match>().Select(m => m.Value).ToArray();
+                        string [] shiftsSP = Regex.Matches(subNameSPs[i], @"-?[0-9]").Cast<Match>().Select(m => m.Value).ToArray();
 
-                Func<Transaction, bool> funcSP = (tid) =>
-                {
-                    return Array.Exists(SP.TIDSet.ToArray(), tidSP => tidSP == tid.TID);
-                };
+                        int shiftsBPabs = 0;
+                        Int32.TryParse(shiftsBP[0], out shiftsBPabs);
 
-                double avgBP = transactions.Where(funcBP).Average(o => o.Price);
-                double avgSP = transactions.Where(funcSP).Average(o => o.Price);
+                        int shiftsSPabs = 0;
+                        Int32.TryParse(shiftsSP[0], out shiftsSPabs);
 
-                if (avgBP < avgSP) return -1;
-            }
-            // when BP length < SP length. Remove all same 1-pattern. the pattern, null at first, is > the rest. 
-            else if (subNameBPs.Length < subNameSPs.Length && subNameBPs.Length != 0)
-            {
-                Func<string, bool> func = (name) =>
-                {
-                    return Array.Exists(subNameSPs, nameSP => nameSP == name);
-                };
+                        int [] TIDBP = transactions.Where(trans => trans.ItemSet != null && trans.ItemSet.Contains(letterBP[0])).Select(trans => trans.TID + Math.Abs(shiftsBPabs)).ToArray();
+                        int [] TIDSP = transactions.Where(trans => trans.ItemSet != null && trans.ItemSet.Contains(letterBP[0])).Select(trans => trans.TID + Math.Abs(shiftsBPabs)).ToArray();
 
-                if (subNameBPs.Except(subNameSPs.Where(func)).Count() > 0)
-                {
-                    return -1;
+                        Func<Transaction, bool> funcBP = (tid) =>
+                        {
+                            return Array.Exists(TIDBP, tidBP => tidBP == tid.TID);
+                        };
+
+                        Func<Transaction, bool> funcSP = (tid) =>
+                        {
+                            return Array.Exists(TIDSP, tidSP => tidSP == tid.TID);
+                        };
+
+                        double avgBP = transactions.Where(funcBP).Average(o => o.Price);
+                        double avgSP = transactions.Where(funcSP).Average(o => o.Price);
+
+                        if(avgBP < avgSP)
+                            return -1;
+                    }
                 }
-            }
-            //
-            else if (subNameSPs.Length != 0)
-            {
-                Func<string, bool> func = (name) =>
-                {
-                    return Array.Exists(subNameBPs, nameBP => nameBP == name);
-                };
-
-                if (subNameSPs.Except(subNameBPs.Where(func)).Count() > 0)
-                {
-                    return -1;
-                }
-
             }
 
             return 1;
