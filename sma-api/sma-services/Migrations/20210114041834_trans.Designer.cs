@@ -9,7 +9,7 @@ using sma_services.Models;
 namespace sma_services.Migrations
 {
     [DbContext(typeof(TransactionContext))]
-    [Migration("20210108091528_trans")]
+    [Migration("20210114041834_trans")]
     partial class trans
     {
         protected override void BuildTargetModel(ModelBuilder modelBuilder)

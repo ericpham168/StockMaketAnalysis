@@ -150,62 +150,60 @@ namespace sma_core
                 SP = Shift(SP, interval);
                 SP = Join(pre, SP);
 
-                if(!SellPatterns.Exists(sp => sp == SP.name))
-                { 
-                    SellPatterns.Add(SP.name);
 
-                    // check if exist at least one transaction
-                    if (SP.TIDSet.Count() >= minSup)
+                SellPatterns.Add(SP.name);
+
+                // check if exist at least one transaction
+                if (SP.TIDSet.Count() >= minSup)
+                {
+
+                    if (ComparePattern(BP, SP) != 1 && BP.TIDSet.Count > 0 && SP.TIDSet.Count > 0)
                     {
+                        List<TradingRule> lstTradingRule = new List<TradingRule>();
+                        lstTradingRule = RuleGenerator(BP, SP);
 
-                        if (ComparePattern(BP, SP) != 1 && BP.TIDSet.Count() > 0 && SP.TIDSet.Count > 0)
+                        foreach (var trRule in lstTradingRule)
                         {
-                            List<TradingRule> lstTradingRule = new List<TradingRule>();
-                            lstTradingRule = RuleGenerator(BP, SP);
+                            TradingResult tradingResult = Simulate(trRule);
+                            AllRule.Add(String.Format("[{0},{1},{2}] [{3},{4},{5}]",
+                                trRule.topPriority, trRule.BP.name, trRule.SP.name, tradingResult.Profit, tradingResult.Risk, tradingResult.WinRate));
 
-                            foreach (var trRule in lstTradingRule)
+                            if (isResultsatisfy(tradingResult))
                             {
-                                TradingResult tradingResult = Simulate(trRule);
-                                AllRule.Add(String.Format("[{0},{1},{2}] [{3},{4},{5}]",
-                                    trRule.topPriority, trRule.BP.name, trRule.SP.name, tradingResult.Profit, tradingResult.Risk, tradingResult.WinRate));
-
-                                if (isResultsatisfy(tradingResult))
+                                trRule.tradingResult = tradingResult;
+                                if (tradingRules.Count > 1)
                                 {
-                                    trRule.tradingResult = tradingResult;
-                                    if (tradingRules.Count > 1)
+                                    var x = 0;
+                                }
+                                if (tradingRules.Count > 0)
+                                {
+                                    bool isPatternSame = false;
+                                    foreach (var o in tradingRules)
                                     {
-                                        var x = 0;
-                                    }
-                                    if (tradingRules.Count > 0)
-                                    {
-                                        bool isPatternSame = false;
-                                        foreach (var o in tradingRules)
+                                        if (trRule.BP.name == o.BP.name && trRule.SP.name == o.SP.name && trRule.topPriority == o.topPriority)
                                         {
-                                            if (trRule.BP.name == o.BP.name && trRule.SP.name == o.SP.name && trRule.topPriority == o.topPriority)
-                                            {
-                                                isPatternSame = true;
-                                                break;
-                                            }
+                                            isPatternSame = true;
+                                            break;
                                         }
-                                        //Parallel.ForEach(tradingRules, o =>
-                                        //{
-                                        //    if (trRule.BP.name == o.BP.name && trRule.SP.name == o.SP.name && trRule.topPriority == o.topPriority)
-                                        //    {
-                                        //        isPatternSame = true;
-                                        //    }
-                                        //});
-                                        if (!isPatternSame)
-                                            tradingRules.Add(trRule);
-
                                     }
-                                    else
-                                    {
+                                    //Parallel.ForEach(tradingRules, o =>
+                                    //{
+                                    //    if (trRule.BP.name == o.BP.name && trRule.SP.name == o.SP.name && trRule.topPriority == o.topPriority)
+                                    //    {
+                                    //        isPatternSame = true;
+                                    //    }
+                                    //});
+                                    if (!isPatternSame)
                                         tradingRules.Add(trRule);
-                                    }
+
+                                }
+                                else
+                                {
+                                    tradingRules.Add(trRule);
                                 }
                             }
-                            GenSP(BP, SP, i + 1, interval);
                         }
+                        GenSP(BP, SP, i + 1, interval);
                     }
                 }
             }
@@ -439,7 +437,7 @@ namespace sma_core
                 trRule2.topPriority = TP.SF;
                 trRule3.BP = y;
                 trRule3.SP = x;
-                trRule3.topPriority = TP.BF; 
+                trRule3.topPriority = TP.BF;
                 trRule4.BP = y;
                 trRule4.SP = x;
                 trRule4.topPriority = TP.SF;

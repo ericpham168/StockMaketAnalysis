@@ -14,7 +14,7 @@ namespace sma_services.Models
 
         protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
         {
-            optionsBuilder.UseSqlServer(@"Server=DESKTOP-8OMVIBT\SQLEXPRESS;Database=sma-database;Trusted_Connection=True;", builder =>
+            optionsBuilder.UseSqlServer(@"Server=DESKTOP-1P4H4S8;Database=sma-database;Trusted_Connection=True;", builder =>
             {
                 builder.EnableRetryOnFailure(5, TimeSpan.FromSeconds(10), null);
             });
