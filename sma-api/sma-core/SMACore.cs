@@ -29,9 +29,9 @@ namespace sma_core
         public double MinWinRate = 0;
 
         //json list
-        private List<Pattern> BuyPatterns = new List<Pattern>();
-        private List<Pattern> SellPatterns = new List<Pattern>();
-        private List<TradingRule> AllRule = new List<TradingRule>();
+        private List<string> BuyPatterns = new List<string>();
+        private List<string> SellPatterns = new List<string>();
+        private List<string> AllRule = new List<string>();
         #endregion
 
         #region contrucstor
@@ -108,7 +108,7 @@ namespace sma_core
                 BP = Shift(BP, interval);
                 BP = Join(pre, BP);
                 // json 
-                BuyPatterns.Add(BP);
+                BuyPatterns.Add(BP.name);
 
                 // check if exist at least one transaction
                 if (BP.TIDSet.Count() >= minSup)
@@ -150,8 +150,7 @@ namespace sma_core
                 SP = Shift(SP, interval);
                 SP = Join(pre, SP);
 
-                // json 
-                SellPatterns.Add(SP);
+                SellPatterns.Add(SP.name);
 
                 // check if exist at least one transaction
                 if (SP.TIDSet.Count() >= minSup)
@@ -161,17 +160,12 @@ namespace sma_core
                     {
                         List<TradingRule> lstTradingRule = new List<TradingRule>();
                         lstTradingRule = RuleGenerator(BP, SP);
-                        if (BP.name == "A(0)C(-1)")
-                        {
-                            var x = 0;
-                        }
+
                         foreach (var trRule in lstTradingRule)
                         {
                             TradingResult tradingResult = Simulate(trRule);
-                            // json 
-                            TradingRule rule = new TradingRule();
-                            rule.tradingResult = tradingResult;
-                            AllRule.Add(rule);
+                            AllRule.Add(String.Format("[{0},{1},{2}] [{3},{4},{5}]",
+                                trRule.topPriority, trRule.BP.name, trRule.SP.name, tradingResult.Profit, tradingResult.Risk, tradingResult.WinRate));
 
                             if (isResultsatisfy(tradingResult))
                             {
@@ -442,7 +436,7 @@ namespace sma_core
                 trRule2.topPriority = TP.SF;
                 trRule3.BP = y;
                 trRule3.SP = x;
-                trRule3.topPriority = TP.BF;
+                trRule3.topPriority = TP.BF; 
                 trRule4.BP = y;
                 trRule4.SP = x;
                 trRule4.topPriority = TP.SF;
@@ -516,7 +510,7 @@ namespace sma_core
             {
                 return 0;
             }
-            // compare based on price if two pattern are same length
+            // compare based on price if two pattern are same   
             else if (subNameBPs.Length == subNameSPs.Length && subNameBPs.Length != 0)
             {
                 Func<Transaction, bool> funcBP = (tid) =>
